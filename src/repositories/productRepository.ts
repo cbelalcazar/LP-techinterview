@@ -19,6 +19,19 @@ export class ProductRepository {
     });
   }
 
+  async getStats() {
+    const [totalProducts, outOfStock, totalValueResult] = await Promise.all([
+      prisma.product.count(),
+      prisma.product.count({ where: { stock: 0 } }),
+      prisma.product.aggregate({ _sum: { price: true } })
+    ]);
+    return {
+      totalProducts,
+      outOfStock,
+      totalValue: totalValueResult._sum.price || 0
+    };
+  }
+
   async count(search?: string) {
     const where = search ? {
       OR: [

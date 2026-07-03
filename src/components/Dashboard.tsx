@@ -1,17 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Package, Search, Plus, Upload, Trash2, Edit, ShoppingCart, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Search, Plus, Upload, Trash2, Edit, ShoppingCart, Loader2, ChevronLeft, ChevronRight, TrendingUp, AlertTriangle, Box } from 'lucide-react';
 import { useProductStore } from '@/store/useProductStore';
 import toast, { Toaster } from 'react-hot-toast';
+import { useDebouncedCallback } from 'use-debounce';
 
 export default function Dashboard() {
-  const { products, search, setSearch, loading, fetchProducts, deleteProduct, updateProductLocal, page, totalPages, setPage } = useProductStore();
+  const { products, stats, search, setSearch, loading, fetchProducts, deleteProduct, updateProductLocal, page, totalPages, setPage } = useProductStore();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<any>(null);
+  const [localSearch, setLocalSearch] = useState(search);
   const [formData, setFormData] = useState({
     name: '', sku: '', description: '', category: '', price: 0, stock: 0, weight_kg: 0
   });
@@ -20,8 +22,13 @@ export default function Dashboard() {
     fetchProducts();
   }, [fetchProducts]);
 
+  const debouncedSetSearch = useDebouncedCallback((val) => {
+    setSearch(val);
+  }, 400);
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
+    setLocalSearch(e.target.value);
+    debouncedSetSearch(e.target.value);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,7 +143,7 @@ export default function Dashboard() {
           <input 
             type="text" 
             placeholder="Search by name, sku or description..." 
-            value={search}
+            value={localSearch}
             onChange={handleSearch}
           />
         </div>
@@ -161,6 +168,30 @@ export default function Dashboard() {
       </header>
 
       <main className="content">
+        <div className="stats-container">
+          <div className="stat-card">
+            <div className="stat-icon"><Box size={24} /></div>
+            <div className="stat-info">
+              <h3>Total Products</h3>
+              <p>{stats?.totalProducts || 0}</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon warning"><AlertTriangle size={24} /></div>
+            <div className="stat-info">
+              <h3>Out of Stock</h3>
+              <p>{stats?.outOfStock || 0}</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon success"><TrendingUp size={24} /></div>
+            <div className="stat-info">
+              <h3>Total Inventory Value</h3>
+              <p>${(stats?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="grid">
           {loading ? (
             Array.from({ length: 8 }).map((_, i) => (

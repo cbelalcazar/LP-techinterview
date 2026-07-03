@@ -5,12 +5,14 @@ import { ParserFactory } from '@/parsers/parserFactory';
 export class ProductService {
   async getProducts(search?: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
-    const [products, total] = await Promise.all([
+    const [products, total, stats] = await Promise.all([
       productRepository.findAll(search, skip, limit),
-      productRepository.count(search)
+      productRepository.count(search),
+      productRepository.getStats()
     ]);
     return {
       products,
+      stats,
       pagination: {
         total,
         page,

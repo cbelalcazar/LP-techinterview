@@ -13,6 +13,7 @@ interface Product {
 
 interface ProductStore {
   products: Product[];
+  stats: { totalProducts: number; outOfStock: number; totalValue: number };
   total: number;
   page: number;
   limit: number;
@@ -28,6 +29,7 @@ interface ProductStore {
 
 export const useProductStore = create<ProductStore>((set, get) => ({
   products: [],
+  stats: { totalProducts: 0, outOfStock: 0, totalValue: 0 },
   total: 0,
   page: 1,
   limit: 12,
@@ -60,6 +62,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
         const data = await res.json();
         set({ 
           products: data.products || data, 
+          stats: data.stats || { totalProducts: 0, outOfStock: 0, totalValue: 0 },
           total: data.pagination?.total || 0,
           totalPages: data.pagination?.totalPages || 1
         });

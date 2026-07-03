@@ -11,6 +11,7 @@ jest.mock('@/lib/prisma', () => ({
       findMany: jest.fn(),
       count: jest.fn(),
       create: jest.fn(),
+      aggregate: jest.fn(),
     },
   },
 }));
@@ -26,6 +27,7 @@ describe('Products API Route Handlers', () => {
     ];
     (prisma.product.findMany as jest.Mock).mockResolvedValue(mockProducts);
     (prisma.product.count as jest.Mock).mockResolvedValue(1);
+    (prisma.product.aggregate as jest.Mock).mockResolvedValue({ _sum: { price: 99.9 } });
 
     const req = new NextRequest('http://localhost:3000/api/products');
     const res = await GET(req);

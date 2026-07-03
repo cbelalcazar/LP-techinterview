@@ -1,5 +1,7 @@
 # Nexus E-Commerce - Technical Challenge
 
+[![CI](https://github.com/cbelalcazar/LP-techinterview/actions/workflows/ci.yml/badge.svg)](https://github.com/cbelalcazar/LP-techinterview/actions/workflows/ci.yml)
+
 Hello! Welcome to the repository containing my solution for the technical challenge. I have taken this challenge very seriously, aiming not only to meet the basic requirements but to build an application with an enterprise-level standard, clean architecture, a responsive and beautiful frontend, and a bulletproof backend.
 
 Below, you will find instructions on how to run the project and the architectural design decisions I made to ensure this product is robust and scalable.
