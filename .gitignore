@@ -30,12 +30,18 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI / IDE files
+.gemini/
+.antigravity/
+.cursor/
+.vscode/
+
+# NOTICE: .env files are INTENTIONALLY left out of .gitignore 
+# as per the technical test requirements to make testing easier.
