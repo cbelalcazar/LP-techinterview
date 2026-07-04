@@ -11,8 +11,8 @@ jest.mock('@/lib/prisma', () => ({
       findMany: jest.fn(),
       count: jest.fn(),
       create: jest.fn(),
-      aggregate: jest.fn(),
     },
+    $queryRaw: jest.fn(),
   },
 }));
 
@@ -27,7 +27,7 @@ describe('Products API Route Handlers', () => {
     ];
     (prisma.product.findMany as jest.Mock).mockResolvedValue(mockProducts);
     (prisma.product.count as jest.Mock).mockResolvedValue(1);
-    (prisma.product.aggregate as jest.Mock).mockResolvedValue({ _sum: { price: 99.9 } });
+    (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ totalValue: 99.9 }]);
 
     const req = new NextRequest('http://localhost:3000/api/products');
     const res = await GET(req);
@@ -101,7 +101,7 @@ describe('Products API Route Handlers', () => {
 
     const req = new NextRequest('http://localhost:3000/api/products', {
       method: 'POST',
-      body: JSON.stringify({})
+      body: JSON.stringify({ name: 'New', sku: 'N2', description: 'New product', category: 'Cat', price: 50.0, stock: 5, weight_kg: 1.2 })
     });
     const res = await POST(req);
     const data = await res.json();

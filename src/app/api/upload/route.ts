@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { productService } from '@/services/productService';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,11 +15,11 @@ export async function POST(request: NextRequest) {
     }
 
     const fileContent = await file.text();
-    const count = await productService.processFile(fileContent, file.name, file.type);
+    const result = await productService.processFile(fileContent, file.name, file.type);
     
-    return NextResponse.json({ success: true, count });
-  } catch (error) {
-    console.error("Upload error:", error);
+    return NextResponse.json({ success: true, count: result.count, errors: result.errors });
+  } catch (error: any) {
+    logger.error({ err: error }, "Upload error");
     return NextResponse.json({ error: 'Failed to process file' }, { status: 500 });
   }
 }

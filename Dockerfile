@@ -18,5 +18,5 @@ RUN npm run build
 
 EXPOSE 3000
 
-# Push database schema and start server
-CMD ["sh", "-c", "npx prisma db push && npm start"]
+# Deploy database migrations and start server
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

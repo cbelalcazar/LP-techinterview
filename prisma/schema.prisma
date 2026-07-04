@@ -20,5 +20,18 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  transactions Transaction[]
+
   @@index([name])
+  @@index([category])
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  productId String
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }

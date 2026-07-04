@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Package, Search, Plus, Upload, Trash2, Edit, ShoppingCart, Loader2, ChevronLeft, ChevronRight, TrendingUp, AlertTriangle, Box } from 'lucide-react';
+import { Package, Search, Plus, Upload, Trash2, Edit, ShoppingCart, Loader2, ChevronLeft, ChevronRight, TrendingUp, AlertTriangle, Box, X } from 'lucide-react';
 import { useProductStore } from '@/store/useProductStore';
 import toast, { Toaster } from 'react-hot-toast';
 import { useDebouncedCallback } from 'use-debounce';
 
 export default function Dashboard() {
-  const { products, stats, search, setSearch, loading, fetchProducts, deleteProduct, updateProductLocal, page, totalPages, setPage } = useProductStore();
+  const { products, stats, search, setSearch, category, setCategory, minPrice, setMinPrice, maxPrice, setMaxPrice, sortBy, setSortBy, loading, fetchProducts, deleteProduct, updateProductLocal, page, totalPages, setPage } = useProductStore();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<any[]>([]);
   const [currentProduct, setCurrentProduct] = useState<any>(null);
   const [localSearch, setLocalSearch] = useState(search);
   const [formData, setFormData] = useState({
@@ -29,6 +30,11 @@ export default function Dashboard() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalSearch(e.target.value);
     debouncedSetSearch(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setLocalSearch('');
+    debouncedSetSearch('');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +55,9 @@ export default function Dashboard() {
       const data = await res.json();
       if (res.ok) {
         toast.success(`Success! Imported ${data.count} products.`, { id: toastId });
+        if (data.errors && data.errors.length > 0) {
+          setUploadErrors(data.errors);
+        }
         fetchProducts();
       } else {
         toast.error(data.error || 'Upload failed', { id: toastId });
@@ -72,18 +81,20 @@ export default function Dashboard() {
     toast.success(`Payment processing for ${product.name}...`, { icon: '💳' });
     
     if (product.stock > 0) {
-      const updatedProduct = { ...product, stock: product.stock - 1 };
-      
       try {
-        const res = await fetch(`/api/products/${product.id}`, {
-          method: 'PUT',
+        const res = await fetch(`/api/products/${product.id}/purchase`, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedProduct)
+          body: JSON.stringify({ quantity: 1 })
         });
         
         if (res.ok) {
+          const updatedProduct = await res.json();
           updateProductLocal(product.id, { stock: updatedProduct.stock });
           toast.success(`Successfully purchased ${product.name}!`);
+        } else {
+          const errorData = await res.json();
+          toast.error(errorData.error || 'Failed to complete purchase');
         }
       } catch (err) {
         toast.error('Failed to complete purchase');
@@ -142,10 +153,15 @@ export default function Dashboard() {
           <Search size={20} className="search-icon" />
           <input 
             type="text" 
-            placeholder="Search by name, sku or description..." 
+            placeholder="Search products..." 
             value={localSearch}
             onChange={handleSearch}
           />
+          {localSearch && (
+            <button className="clear-search" onClick={clearSearch} aria-label="Clear search">
+              <X size={16} />
+            </button>
+          )}
         </div>
         <div className="actions">
           <input 
@@ -166,6 +182,22 @@ export default function Dashboard() {
           </button>
         </div>
       </header>
+      
+      <div className="filters-bar" style={{ display: 'flex', gap: '1rem', padding: '1rem 2rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--border)' }}>
+        <select value={category} onChange={e => setCategory(e.target.value)} style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+          <option value="">All Categories</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Clothing">Clothing</option>
+          <option value="Home">Home</option>
+        </select>
+        <input type="number" placeholder="Min Price" value={minPrice} onChange={e => setMinPrice(e.target.value)} style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', width: '100px' }} />
+        <input type="number" placeholder="Max Price" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)', width: '100px' }} />
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+          <option value="newest">Newest Arrivals</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+        </select>
+      </div>
 
       <main className="content">
         <div className="stats-container">
@@ -310,6 +342,26 @@ export default function Dashboard() {
                 <button type="submit" className="btn btn-primary">Save Product</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {uploadErrors.length > 0 && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: '600px' }}>
+            <h2>Import Errors</h2>
+            <p>Some rows failed to import. Please fix them and re-upload.</p>
+            <div style={{ maxHeight: '300px', overflowY: 'auto', background: 'var(--bg)', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+              {uploadErrors.map((err, i) => (
+                <div key={i} style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                  <p><strong>Row {err.row}:</strong> {typeof err.error === 'string' ? err.error : JSON.stringify(err.error)}</p>
+                  <pre style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{JSON.stringify(err.data, null, 2)}</pre>
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions" style={{ marginTop: '1rem' }}>
+              <button className="btn btn-primary" onClick={() => setUploadErrors([])}>Close</button>
+            </div>
           </div>
         </div>
       )}

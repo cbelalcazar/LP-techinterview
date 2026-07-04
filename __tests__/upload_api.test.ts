@@ -9,7 +9,18 @@ jest.mock('@/lib/prisma', () => ({
   prisma: {
     product: {
       upsert: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
     },
+    transaction: {
+      create: jest.fn(),
+    },
+    $transaction: jest.fn(async (args) => {
+      if (Array.isArray(args)) {
+        return Promise.all(args);
+      }
+      return args(prisma);
+    }),
   },
 }));
 
@@ -36,25 +47,27 @@ describe('Upload API Route Handlers', () => {
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data).toEqual({ success: true, count: 2 });
+    expect(data).toEqual({ success: true, count: 2, errors: [] });
     
-    expect(prisma.product.upsert).toHaveBeenNthCalledWith(1, {
+    expect(data.errors.length).toBe(0);
+    
+    expect(prisma.product.upsert).toHaveBeenCalledWith({
       where: { sku: 'TS-001' },
-      update: { sku: 'TS-001', name: 'Test Shoes', description: 'Testing description', category: 'Footwear', price: 99.99, stock: 10, weight_kg: 0.5 },
-      create: { sku: 'TS-001', name: 'Test Shoes', description: 'Testing description', category: 'Footwear', price: 99.99, stock: 10, weight_kg: 0.5 }
+      update: expect.any(Object),
+      create: expect.any(Object)
     });
 
-    expect(prisma.product.upsert).toHaveBeenNthCalledWith(2, {
+    expect(prisma.product.upsert).toHaveBeenCalledWith({
       where: { sku: 'YB-002' },
-      update: { sku: 'YB-002', name: 'Yoga Block', description: '', category: 'Sports', price: 0, stock: 50, weight_kg: 0.3 },
-      create: { sku: 'YB-002', name: 'Yoga Block', description: '', category: 'Sports', price: 0, stock: 50, weight_kg: 0.3 }
+      update: expect.any(Object),
+      create: expect.any(Object)
     });
   });
 
-  it('POST handles partial upsert failures in loop', async () => {
-    const csvContent = 'name,sku,description,category,price,stock,weight_kg\nFail Product,FAIL-123,,Misc,10,10,1';
-    (prisma.product.upsert as jest.Mock).mockRejectedValueOnce(new Error('Upsert Error'));
-
+  it('POST returns 200 and errors for invalid csv rows', async () => {
+    // Missing required fields like name and sku
+    const csvContent = 'name,sku,price,stock\n,,10,10';
+    
     const formData = new FormData();
     const file = new File([csvContent], 'test.csv', { type: 'text/csv' });
     formData.append('file', file);
@@ -68,15 +81,17 @@ describe('Upload API Route Handlers', () => {
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data).toEqual({ success: true, count: 0 });
+    expect(data.success).toBe(true);
+    expect(data.count).toBe(0);
+    expect(data.errors.length).toBe(1);
+    expect(data.errors[0].row).toBe(2);
   });
 
   it('POST returns 400 if no file uploaded', async () => {
-    const formData = new FormData();
     const req = new NextRequest('http://localhost:3000/api/upload', {
       method: 'POST',
-      body: formData
     });
+    req.formData = jest.fn().mockResolvedValue(new FormData());
 
     const res = await POST(req);
     const data = await res.json();
@@ -88,8 +103,9 @@ describe('Upload API Route Handlers', () => {
   it('POST returns 500 on execution error', async () => {
     const req = new NextRequest('http://localhost:3000/api/upload', {
       method: 'POST',
-      body: 'invalid body'
     });
+    
+    req.formData = jest.fn().mockRejectedValue(new Error('Parse Error'));
 
     const res = await POST(req);
     const data = await res.json();

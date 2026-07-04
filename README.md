@@ -46,6 +46,16 @@ Here is the status of every point requested in the original instructions:
 
 ---
 
+## ⭐ Enterprise Enhancements (Phase 2)
+Following the initial review, the application was upgraded to meet high-scale enterprise standards:
+- **Secure Transaction Model**: Added a dedicated `Transaction` model and `POST /api/products/[id]/purchase` endpoint to track purchases historically and ensure stock updates are decoupled from the client.
+- **Concurrency Controls**: Atomic stock decrements using database transactions (`prisma.$transaction`) prevent race conditions during checkout.
+- **Advanced CSV Operations**: Batched CSV imports in chunks of 200 records to prevent memory exhaustion. Detailed error reporting (with row numbers) for invalid CSV lines directly in the UI.
+- **Search & Discovery**: Introduced multi-dimensional filtering (by category, price ranges) and sorting (by price, date) in the API, Repository, and UI Store.
+- **Production Readiness**: Added Pino structured logging for JSON-based log aggregation, replaced generic db pushes with standard Prisma Migrations (`prisma migrate deploy`), and created B-Tree/GIN indexes for performance.
+
+---
+
 ## 🏗️ Architecture & Software Decisions
 
 To demonstrate real technical proficiency, I decided to move away from monolithic or spaghetti solutions, implementing a **Clean Architecture** with enterprise-oriented design patterns:

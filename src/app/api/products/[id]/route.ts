@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { productService } from '@/services/productService';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
     }
     return NextResponse.json(product);
   } catch (error) {
-    console.error("GET by ID error:", error);
+    logger.error({ err: error }, "GET by ID error");
     return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
   }
 }
@@ -25,7 +26,7 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ id: s
     const updated = await productService.updateProduct(params.id, body);
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("PUT error:", error);
+    logger.error({ err: error }, "PUT error");
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
   }
 }
@@ -36,7 +37,7 @@ export async function DELETE(request: NextRequest, props: { params: Promise<{ id
     await productService.deleteProduct(params.id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error("DELETE error:", error);
+    logger.error({ err: error }, "DELETE error");
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
   }
 }
